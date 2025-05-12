@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}CoffeeCorne - Заказ{% endblock %}
+
+{% block content %}
+<div class='cart-order-page'>
+    <div class='container'>
+        <div class='cart-order-container'>
+            <div class='order-info'>
+                <div class='order-status-text'>Статус заказа:</div>
+                <div class='order-status'>Готовится</div>
+
+                <div class='info'>Информация о заказе:</div>
+
+                <div class='info-work-text'>Ваш официант</div>
+                <div class='info-work'>Ярослав</div>
+
+                <div class='info-time-text'>Время оформления</div>
+                <div class='info-time'>{{ current_time }}</div>
+
+                <div class='info-time-order-text'>Ожидайте заказ</div>
+                <div class='info-time-order'>В течение 60 мин</div>
+
+                <div class='info-price-text'>Стоимость заказа</div>
+                <div class='info-price'>{{ total_price }} руб.</div>
+
+                <div class='info-order'>Ваш заказ:</div>
+                <div id="order-items">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+        const orderItems = document.getElementById('order-items');
+
+        orderItems.innerHTML = cart.map(item => `
+            <div class='info-product-pack'>
+                <img src="${item.image}" width="60" height="60" alt="${item.name}">
+                <div class='info-product'>${item.name} (${item.quantity} × ${item.price} руб.)</div>
+            </div>
+        `).join('');
+
+        localStorage.removeItem('cart');
+    });
+</script>
+{% endblock %}

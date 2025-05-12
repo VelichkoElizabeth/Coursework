@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block header_content %}
+<div class='header-down'>
+    <section id='main'>
+        <div class='header-title'>Тепло в каждой <br> чашке</div>
+    </section>
+    <div class='header-subtitle'>Кофе, отобранный с <br> любовью — только <br> лучшие зерна для вас!</div>
+    <div class='header-btn'>
+        <a href='#order' class='header-button'>СДЕЛАТЬ ЗАКАЗ</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class='menu'>
+    <div class='container'>
+        <section id='order'>
+            <div class='menu-title text-left'>МЕНЮ</div>
+        </section>
+        <div class='menu-line'>
+            <a class='menu-line-section' href='javascript:void(0);' onclick="loadMenu('Все')">ВСЕ</a>
+            <a class='menu-line-section' href='javascript:void(0);' onclick="loadMenu('кофе')">КОФЕ</a>
+            <a class='menu-line-section' href='javascript:void(0);' onclick="loadMenu('чай')">ЧАЙ</a>
+            <a class='menu-line-section' href='javascript:void(0);' onclick="loadMenu('сезонные напитки')">СЕЗОННЫЕ НАПИТКИ</a>
+            <a class='menu-line-section' href='javascript:void(0);' onclick="loadMenu('десерты')">ДЕСЕРТЫ</a>
+            <a class='menu-line-section' href='javascript:void(0);' onclick="loadMenu('выпечка')">ВЫПЕЧКА</a>
+        </div>
+        <div id="menu-items" class="menu-items-container"></div>
+    </div>
+</div>
+
+<div class='about-us'>
+    <div class='container'>
+        <section id='about-us'>
+            <div class='about-us-title text-left'>О НАС</div>
+        </section>
+        <div class='about-us-container'>
+            <div class='title'>
+                <div class='about-us-text1'>Добро пожаловать в нашу кофейню!</div>
+                <div class='about-us-text2'>
+                    Здесь мы предлагаем Вам уникальное путешествие в мир кофе, основанное на любви к этому напитку. Мы используем только лучшие сорта зерен, заботливо отобранные у проверенных производителей. В нашем меню вы найдёте как классические, так и авторские напитки, а также разнообразные выпечки и закуски, которые подчеркнут вкус вашего кофе.
+                </div>
+                <div class='about-us-text3'>
+                    Наша команда — это настоящие ценители кофе, готовые поделиться своим опытом. Мы стремимся создать атмосферу уюта и тепла, где люди могут собираться, общаться и наслаждаться каждым мгновением.
+                </div>
+                <div class='about-us-text4'>
+                    Приходите в нашу кофейню и создавайте незабываемые моменты с хорошим кофе и душевными беседами. Мы всегда рады вам!
+                </div>
+            </div>
+            <img src="{{ url_for('static', filename='images/about-us-img2.png') }}" alt="О нашей кофейне">
+        </div>
+    </div>
+</div>
+{% endblock %}

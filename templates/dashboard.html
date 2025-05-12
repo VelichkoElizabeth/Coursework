@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+
+{% block title %}CoffeeCorne - Панель сотрудника{% endblock %}
+
+{% block content %}
+<div class='log-in-work-page'>
+    <div class='container'>
+        <div class='lod-in-work-container'>
+            <div class='hello' id="greeting">Здравствуйте, {{ employee_name }}!</div>
+
+            <div class='tabs'>
+                <button class='tab-button active' data-tab='orders'>Заказы</button>
+                <button class='tab-button' data-tab='menu'>Управление меню</button>
+            </div>
+
+            <div id='orders-tab' class='tab-content active'>
+                <div class='order-title'>Заказы:</div>
+                <div id="orders-container">
+                </div>
+                <button id="refresh-orders" class="styled-button">Обновить заказы</button>
+            </div>
+
+            <div id='menu-tab' class='tab-content'>
+                <div class='order-title'>Меню:</div>
+                <button id="add-menu-item" class="styled-button">Добавить позицию</button>
+                <div id="menu-items-container">
+                </div>
+            </div>
+
+            <a href="{{ url_for('logout') }}" class="styled-button logout-btn">Выйти</a>
+        </div>
+    </div>
+</div>
+
+<div id="menu-item-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modal-title">Редактировать позицию</h2>
+        <form id="menu-item-form" enctype="multipart/form-data">
+            <input type="hidden" id="menu-item-id">
+
+            <div class="form-group">
+                <label for="menu-item-name">Название:</label>
+                <input type="text" id="menu-item-name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="menu-item-price">Цена (руб.):</label>
+                <input type="number" id="menu-item-price" min="0" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label for="menu-item-category">Категория:</label>
+                <select id="menu-item-category" required>
+                    <option value="кофе">Кофе</option>
+                    <option value="чай">Чай</option>
+                    <option value="сезонные напитки">Сезонные напитки</option>
+                    <option value="десерты">Десерты</option>
+                    <option value="выпечка">Выпечка</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="menu-item-image">Изображение:</label>
+                <input type="file" id="menu-item-image" accept="image/*">
+                <div id="image-preview-container">
+                    <img id="image-preview" src="" alt="Предпросмотр">
+                </div>
+            </div>
+
+            <button type="submit" class="styled-button">Сохранить изменения</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const tabs = document.querySelectorAll('.tab-button');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+
+                if (tab.dataset.tab === 'orders') {
+                    fetchOrders();
+                } else if (tab.dataset.tab === 'menu') {
+                    fetchMenuItems();
+                }
+            });
+        });
+
+        document.getElementById('refresh-orders').addEventListener('click', fetchOrders);
+
+        document.getElementById('add-menu-item').addEventListener('click', () => {
+            openMenuItemModal();
+        });
+
+        fetchOrders();
+    });
+
+    function fetchOrders() {
+        fetch('/api/orders')
+            .then(response => {
+                if (!response.ok) throw new Error('Ошибка загрузки заказов');
+                return response.json();
+            })
+            .then(orders => {
+                const container = document.getElementById('orders-container');
+                if (orders.length === 0) {
+                    container.innerHTML = '<div class="no-orders">Нет активных заказов</div>';
+                    return;
+                }
+
+                container.innerHTML = orders.map(order => `
+                    <div class='order-card'>
+                        <div class='order-header'>
+                            <div class='order-card-number'>Заказ №${order.id}</div>
+                            <div class='order-card-table'>Стол №${order.table}</div>
+                            <div class='order-card-status'>Статус: ${order.status}</div>
+                        </div>
+                        <div class='order-card-time'>Создан: ${order.created_at}</div>
+                        <div class='order-card-total'>Сумма: ${order.total} руб.</div>
+                        <div class='order-card-menu'>
+                            <strong>Состав заказа:</strong>
+                            <ul>
+                                ${order.items.map(item => `<li>${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                        <div class='order-actions'>
+                            <select class='status-select' data-id="${order.id}">
+                                <option value="Готовится" ${order.status === 'Готовится' ? 'selected' : ''}>Готовится</option>
+                                <option value="Готов" ${order.status === 'Готов' ? 'selected' : ''}>Готов</option>
+                                <option value="Завершен" ${order.status === 'Завершен' ? 'selected' : ''}>Завершен</option>
+                            </select>
+                            <button class="delete-order" data-id="${order.id}">Удалить</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                setupOrderEventListeners();
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                document.getElementById('orders-container').innerHTML =
+                    '<div class="error-message">Ошибка загрузки заказов</div>';
+            });
+    }
+
+    function setupOrderEventListeners() {
+        document.querySelectorAll('.status-select').forEach(select => {
+            select.addEventListener('change', function() {
+                const orderId = this.dataset.id;
+                const newStatus = this.value;
+
+                fetch(`/api/orders/${orderId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Ошибка обновления статуса');
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        const statusElement = this.closest('.order-card').querySelector('.order-card-status');
+                        statusElement.textContent = `Статус: ${newStatus}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    alert('Не удалось обновить статус заказа');
+                });
+            });
+        });
+
+        document.querySelectorAll('.delete-order').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (confirm('Вы уверены, что хотите удалить этот заказ?')) {
+                    const orderId = this.dataset.id;
+
+                    fetch(`/api/orders/${orderId}`, {
+                        method: 'DELETE'
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Ошибка удаления заказа');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.status === 'success') {
+                            this.closest('.order-card').remove();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка:', error);
+                        alert('Не удалось удалить заказ');
+                    });
+                }
+            });
+        });
+    }
+
+
+    function fetchMenuItems() {
+        fetch('/api/menu')
+            .then(response => {
+                if (!response.ok) throw new Error('Ошибка загрузки меню');
+                return response.json();
+            })
+            .then(items => {
+                const container = document.getElementById('menu-items-container');
+
+                if (items.length === 0) {
+                    container.innerHTML = '<div class="no-items">Нет товаров в меню</div>';
+                    return;
+                }
+                container.innerHTML = items.map(item => `
+                    <div class='menu-item-card'>
+                        <div class='menu-item-image-container'>
+                            <img src="${item.image || '/static/images/default.png'}"
+                                 alt="${item.name}"
+                                 class="menu-item-image">
+                        </div>
+                        <div class='menu-item-info'>
+                            <div class='menu-item-name'>${item.name}</div>
+                            <div class='menu-item-details'>
+                                <span class='menu-item-price'>${item.price} руб.</span>
+                                <span class='menu-item-category'>${item.category}</span>
+                            </div>
+                        </div>
+                        <div class='menu-item-actions'>
+                            <button class="edit-menu-item" data-id="${item.id}">Изменить</button>
+                            <button class="delete-menu-item" data-id="${item.id}">Удалить</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                setupMenuEventListeners();
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                document.getElementById('menu-items-container').innerHTML =
+                    '<div class="error-message">Ошибка загрузки меню</div>';
+            });
+    }
+
+    function setupMenuEventListeners() {
+        // Обработчик для кнопки "Изменить"
+        document.querySelectorAll('.edit-menu-item').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const itemId = this.dataset.id;
+                fetchMenuItemDetails(itemId);
+            });
+        });
+
+        document.querySelectorAll('.delete-menu-item').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const itemId = this.dataset.id;
+                deleteMenuItem(itemId);
+            });
+        });
+    }
+
+    function fetchMenuItemDetails(itemId) {
+        fetch(`/api/menu/${itemId}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Ошибка загрузки данных товара');
+                return response.json();
+            })
+            .then(item => {
+                openMenuItemModal(item);
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Не удалось загрузить данные товара');
+            });
+    }
+
+    function deleteMenuItem(itemId) {
+        if (confirm('Вы уверены, что хотите удалить этот товар?')) {
+            fetch(`/api/menu/${itemId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Ошибка удаления');
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    fetchMenuItems(); // Обновляем список
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Не удалось удалить товар');
+            });
+        }
+    }
+
+    const modal = document.getElementById('menu-item-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const menuItemForm = document.getElementById('menu-item-form');
+
+    function openMenuItemModal(item = null) {
+        const modal = document.getElementById('menu-item-modal');
+        const form = document.getElementById('menu-item-form');
+        const imagePreview = document.getElementById('image-preview');
+
+        if (item) {
+            document.getElementById('modal-title').textContent = 'Редактировать позицию';
+            document.getElementById('menu-item-id').value = item.id;
+            document.getElementById('menu-item-name').value = item.name;
+            document.getElementById('menu-item-price').value = item.price;
+            document.getElementById('menu-item-category').value = item.category;
+
+            if (item.image) {
+                imagePreview.src = item.image;
+                imagePreview.style.display = 'block';
+            } else {
+                imagePreview.style.display = 'none';
+            }
+        } else {
+            document.getElementById('modal-title').textContent = 'Добавить позицию';
+            form.reset();
+            imagePreview.style.display = 'none';
+        }
+
+        document.getElementById('menu-item-image').addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        modal.style.display = 'block';
+    }
+    document.querySelector('.close').addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+
+    menuItemForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        const formData = new FormData();
+        formData.append('name', document.getElementById('menu-item-name').value);
+        formData.append('price', document.getElementById('menu-item-price').value);
+        formData.append('category', document.getElementById('menu-item-category').value);
+
+        const itemId = document.getElementById('menu-item-id').value;
+        if (itemId) {
+            formData.append('id', itemId);
+        }
+
+        const imageInput = document.getElementById('menu-item-image');
+        if (imageInput.files[0]) {
+            formData.append('image', imageInput.files[0]);
+        }
+
+        fetch('/api/menu', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            modal.style.display = 'none';
+            fetchMenuItems();
+        });
+    });
+
+    document.getElementById('menu-item-image').addEventListener('change', function(e) {
+        const preview = document.getElementById('image-preview');
+        preview.innerHTML = '';
+
+        if (this.files && this.files[0]) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(this.files[0]);
+            img.style.maxHeight = '100px';
+            preview.appendChild(img);
+        }
+    });
+</script>
+{% endblock %}

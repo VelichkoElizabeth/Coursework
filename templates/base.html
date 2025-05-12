@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CoffeeCorne{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&display=swap" rel="stylesheet">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% block header %}
+    <div class='header {% if request.endpoint != "index" %}no-bg{% endif %}'>
+        <div class='container'>
+            <div class='header-line'>
+                <div class='header-logo'>
+                    <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="CoffeeCorne">
+                </div>
+                <div class='nav'>
+                    <a class='nav-item' href="{{ url_for('index') }}">ГЛАВНАЯ</a>
+                    <a class='nav-item' href="#order">МЕНЮ</a>
+                    <a class='nav-item' href="#about-us">О НАС</a>
+                    <a class='nav-item' href="{{ url_for('login') }}">СОТРУДНИКАМ</a>
+                </div>
+                <div class='phone'>
+                    <a class='num' href='tel:+79773041079'>+7 977-(304)-10-79</a>
+                </div>
+                <div class='cart-header'>
+                    <a href="{{ url_for('cart') }}">
+                        <img src="{{ url_for('static', filename='images/cart.svg') }}" alt="Корзина">
+                    </a>
+                </div>
+            </div>
+            {% block header_content %}{% endblock %}
+        </div>
+    </div>
+    {% endblock %}
+
+    {% block content %}{% endblock %}
+
+    {% block footer %}
+    <div class='rights'>© 2025 "Coffe Corne". Все права защищены.</div>
+    {% endblock %}
+
+    {% block scripts %}
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {% endblock %}
+</body>
+</html>

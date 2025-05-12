@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}CoffeeCorne - Вход для сотрудников{% endblock %}
+
+{% block content %}
+<div class='log-in-page'>
+    <div class='container'>
+        <div class='log-in-container'>
+            <div class='log-in-title'>ВХОД ДЛЯ СОТРУДНИКОВ</div>
+
+            <form id="loginForm" method="POST">
+                <div class='log-in-login'>Логин</div>
+                <input type="text" id="login" name="login" placeholder="IvanIvanov123" required>
+
+                <div class='log-in-password'>Пароль</div>
+                <input type="password" id="password" name="password" placeholder="********" required>
+
+                <button type="submit" class="styled-button">Войти</button>
+            </form>
+
+            {% if error %}
+            <div class="error-message">{{ error }}</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+{% endblock %}

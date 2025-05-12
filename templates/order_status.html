@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}CoffeeCorne - Статус заказа{% endblock %}
+
+{% block content %}
+<div class='cart-order-page'>
+    <div class='container'>
+        <div class='cart-order-container'>
+            <div class='order-info'>
+                <div class='order-status-text'>Статус заказа:</div>
+                <div class='order-status' id="order-status">
+                    {% if order.status == 'Готовится' %}
+                        <span style="color: #ff9800;">Готовится</span>
+                    {% elif order.status == 'Готов' %}
+                        <span style="color: #4caf50;">Готов к выдаче</span>
+                    {% elif order.status == 'Завершен' %}
+                        <span style="color: #f44336;">Завершен</span>
+                    {% endif %}
+                </div>
+
+                <div class='info'>Информация о заказе:</div>
+
+                <div class='info-work-text'>Ваш официант</div>
+                <div class='info-work'>{{ order.employee.name }}</div>
+
+                <div class='info-time-text'>Время оформления</div>
+                <div class='info-time'>{{ order.created_at.strftime('%d.%m.%Y в %H:%M') }}</div>
+
+                <div class='info-time-order-text'>Номер столика</div>
+                <div class='info-time-order'>{{ order.table_number }}</div>
+
+                <div class='info-price-text'>Стоимость заказа</div>
+                <div class='info-price'>{{ "%.2f"|format(order.total_price) }} руб.</div>
+
+                <div class='info-order'>Ваш заказ:</div>
+                <div id="order-items">
+                    {% for item in order.items %}
+                    <div class='info-product-pack'>
+                        <img src="{{ url_for('static', filename=item.menu_item.image) }}" width="60" height="60" alt="{{ item.menu_item.name }}">
+                        <div class='info-product'>{{ item.menu_item.name }} ({{ item.quantity }} × {{ item.menu_item.price }} руб.)</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        setInterval(() => {
+            fetch(`/api/orders/{{ order.id }}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status) {
+                        document.getElementById('order-status').textContent = data.status;
+                    }
+                });
+        }, 10000);
+    });
+</script>
+{% endblock %}
