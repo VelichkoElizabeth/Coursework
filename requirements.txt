@@ -5,3 +5,4 @@ SQLAlchemy==1.4.46
 python-dotenv==0.19.0
 flask-sqlalchemy==2.5.1
 sqlalchemy==1.4.46
+gunicorn==21.2.0
